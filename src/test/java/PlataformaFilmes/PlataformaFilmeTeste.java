@@ -7,8 +7,10 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import utils.Restutils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static javax.swing.UIManager.get;
@@ -19,7 +21,8 @@ public class PlataformaFilmeTeste {
 
     @Test
     public void ValidarLogin(){
-        RestAssured.baseURI = "http://localhost:8080";
+
+        Restutils.setBaseURI("http://localhost:8080");
 
         String json = "{\"email\":\"aluno@email.com\",\"senha\":\"123456\"}";
 
@@ -27,28 +30,27 @@ public class PlataformaFilmeTeste {
         * FAZ A ALTERÇÃO DA SENHA
         * */
 
-        Response response = post(json, ContentType.JSON, "/auth");
+        Response response = Restutils.post(json, ContentType.JSON, "auth");
 
         assertEquals(200, response.statusCode());
         token = response.jsonPath().get("token");
-        System.out.println(token);
-
+        System.out.println("TOKEN DO VALIDATELOGIN: " + token);
 
     }
 
     @BeforeAll
     public static void validarLoginMap(){
-        RestAssured.baseURI = "http://localhost:8080";
+        Restutils.setBaseURI("http://localhost:8080");
         Map<String, String> map = new HashMap<>();
         map.put("email", "aluno@email.com");
         map.put("senha", "123456");
         /*map.put("senha", "789");*/
         /*map.remove("senha");*/
-        Response response = post(map, ContentType.JSON, "/auth");
+        Response response = Restutils.post(map, ContentType.JSON, "auth");
 
         assertEquals(200, response.statusCode());
         token = response.jsonPath().get("token");
-        System.out.println(token);
+        System.out.println("TOKEN DO BEFOREALL: " + token);
 
     }
 
@@ -57,34 +59,18 @@ public class PlataformaFilmeTeste {
         Map<String, String> header = new HashMap<>();
         header.put("Authorization", "Bearer "+token);
 
-        Response response = get(header, "categorias");
+        Response response = Restutils.get(header, "categorias");
         assertEquals(200, response.statusCode());
 
 
         System.out.println(response.jsonPath().get().toString());
-    }
 
-    private static Response get(Map<String, String> header, String endpoint) {
-        return RestAssured.given()
-                .relaxedHTTPSValidation()
-                .headers(header)
-                .log().all()
-                .when()
-                .get("categorias")
-                .then()
-                .log().all()
-                .extract().response();
-    }
+        assertEquals("Terror",response.jsonPath().get("tipo[2]"));
+
+        List<String> listTipo = response.jsonPath().get("tipo");
+        assertTrue(listTipo.contains("Terror"),"Não foi encontrado a categoria Terror na lista de categorias");
 
 
-    public static Response post(Object json, ContentType contentType, String endpoint){
-        return RestAssured.given()
-                .relaxedHTTPSValidation()
-                .contentType(contentType)
-                .body(json)
-                .when()
-                .post(endpoint)
-                .thenReturn();
 
     }
 }
